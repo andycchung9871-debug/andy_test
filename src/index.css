@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Work Sans", sans-serif;
+
+  --color-surface-bright: #faf8ff;
+  --color-primary: #004ac6;
+  --color-primary-container: #2563eb;
+  --color-on-primary: #ffffff;
+  --color-surface-variant: #e1e2ed;
+  --color-outline: #737686;
+  --color-border-subtle: #E2E8F0;
+  --color-on-surface: #191b23;
+  --color-on-surface-variant: #434655;
+  --color-urgent-red: #DC2626;
+  --color-event-green: #059669;
+  --color-daily-blue: #3B82F6;
+  --color-surface-pinned: #F8FAFC;
+}
+
+@layer base {
+  body {
+    @apply bg-surface-bright text-on-surface font-sans;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+.bg-pattern {
+  background-color: #faf8ff;
+  background-image: radial-gradient(circle at 2px 2px, #e1e2ed 1px, transparent 0);
+  background-size: 40px 40px;
+}
