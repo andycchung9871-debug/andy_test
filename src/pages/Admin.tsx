@@ -1,8 +1,56 @@
-import React from 'react';
-import { LayoutDashboard, FileText, Tags, Users, Settings, PlusCircle, Search, Bell, ChevronRight, Bold, Italic, List, Link as LinkIcon, Image as ImageIcon, Code, CloudUpload, X, Pin } from 'lucide-react';
+import React, { useState } from 'react';
+import { LayoutDashboard, FileText, Tags, Users, Settings, PlusCircle, Search, Bell, ChevronRight, Bold, Italic, List, Link as LinkIcon, Image as ImageIcon, Code, CloudUpload, X, Pin, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
 export default function Admin() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    category: '選擇分類...',
+    is_pinned: false,
+    content: '',
+    image_url: '',
+    scheduled_at: '',
+    seo_keywords: ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title || formData.category === '選擇分類...' || !formData.content) {
+      alert('請填寫標題、分類與正文內容');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('announcements')
+        .insert([
+          {
+            title: formData.title,
+            category: formData.category,
+            is_pinned: formData.is_pinned,
+            content: formData.content,
+            image_url: formData.image_url || 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=800', // 預設圖
+            scheduled_at: formData.scheduled_at || null,
+            seo_keywords: formData.seo_keywords
+          }
+        ]);
+
+      if (error) throw error;
+
+      alert('公告已成功發布！');
+      navigate('/');
+    } catch (error: any) {
+      alert('發布失敗: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-surface-bright">
       {/* SideNavBar */}
@@ -20,13 +68,6 @@ export default function Admin() {
             <NavItem icon={<Users className="w-5 h-5" />} label="用戶權限" />
             <NavItem icon={<Settings className="w-5 h-5" />} label="系統設定" />
           </nav>
-          
-          <div className="pt-4">
-            <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center space-x-2 shadow-lg shadow-blue-900/50 hover:bg-blue-500 transition-all">
-              <PlusCircle className="w-5 h-5" />
-              <span>發布新文章</span>
-            </button>
-          </div>
         </div>
 
         <div className="p-4 border-t border-slate-800 flex items-center space-x-3">
@@ -39,20 +80,20 @@ export default function Admin() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold truncate">Admin User</p>
-            <p className="text-[10px] text-slate-500 truncate">Super Admin</p>
+            <p className="text-[10px] text-slate-400 truncate">Super Admin</p>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64 flex flex-col">
+      <form onSubmit={handleSubmit} className="flex-1 lg:ml-64 flex flex-col">
         <header className="bg-white border-b border-slate-200 h-16 sticky top-0 z-40 px-6 flex items-center justify-between">
           <h1 className="text-xl font-bold font-display text-slate-900">InfoHub</h1>
           <div className="flex items-center space-x-4">
-            <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all">
+            <button type="button" className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all">
               <Search className="w-5 h-5" />
             </button>
-            <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all relative">
+            <button type="button" className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all relative">
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
             </button>
@@ -70,8 +111,21 @@ export default function Admin() {
               <h2 className="text-3xl font-bold font-display text-slate-900">發布新內容</h2>
             </div>
             <div className="flex space-x-3">
-              <button className="px-6 py-2.5 rounded-xl border border-border-subtle text-slate-600 font-bold hover:bg-slate-50 transition-colors">取消</button>
-              <button className="px-10 py-2.5 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">發布內容</button>
+              <button 
+                type="button" 
+                onClick={() => navigate('/')} 
+                className="px-6 py-2.5 rounded-xl border border-border-subtle text-slate-600 font-bold hover:bg-slate-50 transition-colors"
+                disabled={loading}
+              >
+                取消
+              </button>
+              <button 
+                type="submit" 
+                className="px-10 py-2.5 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-2 disabled:opacity-50"
+                disabled={loading}
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : '發布內容'}
+              </button>
             </div>
           </div>
 
@@ -84,13 +138,19 @@ export default function Admin() {
                     className="w-full px-4 py-4 rounded-xl border border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none font-bold text-xl text-slate-900 placeholder:text-slate-300 transition-all" 
                     placeholder="請輸入吸引人的標題..." 
                     type="text" 
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">分類標籤</label>
-                    <select className="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none text-slate-700 bg-white cursor-pointer transition-all">
+                    <select 
+                      className="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none text-slate-700 bg-white cursor-pointer transition-all"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    >
                       <option>選擇分類...</option>
                       <option>最新消息</option>
                       <option>熱門活動</option>
@@ -100,7 +160,12 @@ export default function Admin() {
                   </div>
                   <div className="flex flex-col justify-end">
                     <label className="flex items-center cursor-pointer p-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">
-                      <input className="sr-only peer" type="checkbox" />
+                      <input 
+                        className="sr-only peer" 
+                        type="checkbox" 
+                        checked={formData.is_pinned}
+                        onChange={(e) => setFormData({ ...formData, is_pinned: e.target.checked })}
+                      />
                       <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all relative"></div>
                       <span className="ml-3 text-sm font-bold text-slate-700 flex items-center">
                         <Pin className="w-3.5 h-3.5 mr-1" />
@@ -125,6 +190,8 @@ export default function Admin() {
                     <textarea 
                       className="w-full px-6 py-4 outline-none resize-none text-slate-700 placeholder:text-slate-300 min-h-[300px]" 
                       placeholder="在此處編寫您的內容..."
+                      value={formData.content}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     ></textarea>
                   </div>
                 </div>
@@ -132,15 +199,14 @@ export default function Admin() {
             </section>
 
             <section className="bg-white border border-border-subtle rounded-2xl p-6 md:p-8 shadow-sm">
-              <label className="block text-sm font-bold text-slate-700 mb-4">封面圖片 (16:9 比例最佳)</label>
-              <div className="relative group">
-                <div className="border-2 border-dashed border-slate-200 rounded-2xl aspect-video flex flex-col items-center justify-center bg-slate-50 group-hover:bg-slate-100/50 transition-all cursor-pointer">
-                  <CloudUpload className="w-12 h-12 text-slate-300 mb-3" />
-                  <p className="text-sm text-slate-500">拖放圖片至此或 <span className="text-primary font-bold">點擊上傳</span></p>
-                  <p className="text-[10px] text-slate-400 mt-2 uppercase tracking-wider">支援 JPG, PNG, WEBP (最大 5MB)</p>
-                </div>
-                <input className="absolute inset-0 opacity-0 cursor-pointer" type="file" />
-              </div>
+              <label className="block text-sm font-bold text-slate-700 mb-4">封面圖片網址 (可暫時輸入 Unsplash 連結)</label>
+              <input 
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary outline-none transition-all placeholder:text-slate-300" 
+                placeholder="https://example.com/image.jpg"
+                type="text"
+                value={formData.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+              />
             </section>
 
             <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 text-white">
@@ -154,29 +220,31 @@ export default function Admin() {
                     <p className="text-sm font-bold">排程發布</p>
                     <p className="text-[10px] text-slate-400">自動於特定時間上線</p>
                   </div>
-                  <input className="bg-slate-700 border-none rounded-lg text-xs p-1.5" type="datetime-local" />
+                  <input 
+                    className="bg-slate-700 border-none rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-blue-400 outline-none text-white" 
+                    type="datetime-local" 
+                    value={formData.scheduled_at}
+                    onChange={(e) => setFormData({ ...formData, scheduled_at: e.target.value })}
+                  />
                 </div>
                 <div className="flex items-center justify-between p-4 bg-slate-800 rounded-xl">
                   <div>
                     <p className="text-sm font-bold">SEO 關鍵字</p>
                     <p className="text-[10px] text-slate-400">自定義搜尋引擎標籤</p>
                   </div>
-                  <input className="bg-slate-700 border-none rounded-lg text-xs p-1.5 w-32 focus:ring-1 focus:ring-blue-400 outline-none" placeholder="關鍵字..." type="text" />
+                  <input 
+                    className="bg-slate-700 border-none rounded-lg text-xs p-1.5 w-32 focus:ring-1 focus:ring-blue-400 outline-none" 
+                    placeholder="關鍵字..." 
+                    type="text" 
+                    value={formData.seo_keywords}
+                    onChange={(e) => setFormData({ ...formData, seo_keywords: e.target.value })}
+                  />
                 </div>
               </div>
             </section>
           </div>
-          
-          <footer className="mt-20 py-8 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center text-[10px] text-slate-400 uppercase tracking-widest gap-4">
-            <p>© 2024 InfoHub Community. All rights reserved.</p>
-            <div className="flex space-x-6">
-              <a href="#" className="hover:text-blue-500 transition-colors">Privacy</a>
-              <a href="#" className="hover:text-blue-500 transition-colors">Terms</a>
-              <a href="#" className="hover:text-blue-500 transition-colors">Contact</a>
-            </div>
-          </footer>
         </div>
-      </main>
+      </form>
     </div>
   );
 }
@@ -194,8 +262,9 @@ function NavItem({ icon, label, active = false }: { icon: React.ReactNode, label
 
 function EditorBtn({ icon }: { icon: React.ReactNode }) {
   return (
-    <button className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-600 hover:text-primary">
+    <button type="button" className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-600 hover:text-primary">
       {icon}
     </button>
   );
 }
+
